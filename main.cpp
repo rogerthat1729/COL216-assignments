@@ -31,17 +31,20 @@ public:
     int numsets;
     int numblocks;
     int numwords;
+    int lognumbytes;
     string allocate;
     string write;
     string replacement;
 
     vector<queue<pair<int, Block>>> replace_data;
-
-    set<pair<int, ll>> lru;
-    map<ll, int> addr_to_time;
-    int lru_size = 0;
-
     vector<int> replace_index;
+
+    vector<set<pair<int, ll>>> lru;
+    vector<unordered_map<ll, int>> addr_to_time;
+    vector<unordered_map<ll, int>> address_present;
+
+    vector<list<pair<int, ll>>> lru_dll;
+    vector<unordered_map<ll, list<pair<int, ll>>::iterator>> nodes;
 
     int tag_length;
 
@@ -53,7 +56,7 @@ public:
     int store_misses = 0;
     int total_cycles = 0;
 
-    const int hit_time = 1;
+    int hit_time = 1;
     int miss_penalty = 100;
 
     Cache(int numsets, int numblocks, int numwords, string allocate, string write, string replacement)
@@ -61,13 +64,22 @@ public:
         this->numsets = numsets;
         this->numblocks = numblocks;
         this->numwords = numwords;
+        this->lognumbytes = 2 + (int)log2(numwords);
         this->allocate = (allocate == "write-allocate" ? "yes" : "no");
         this->write = (write == "write-through" ? "through" : "back");
         this->replacement = replacement;
 
         this->replace_data.resize(numsets, queue<pair<int, Block>>());
+
+        this->lru.resize(numsets, set<pair<int, ll>>());
+        this->addr_to_time.resize(numsets, unordered_map<ll, int>());
+        this->address_present.resize(numsets, unordered_map<ll, int>());
+
         this->replace_index.resize(numsets, 0);
         this->tag_length = 32 - (int)log2(numsets) - (int)log2(numblocks);
+
+        this->lru_dll.resize(numsets, list<pair<int, ll>>());
+        this->nodes.resize(numsets, unordered_map<ll, list<pair<int, ll>>::iterator>());
 
         this->miss_penalty *= numwords;
 
@@ -80,14 +92,6 @@ public:
     {
         for (pair<char, ll> p : instructions)
         {
-            if (replacement == "lru")
-            {
-                if (addr_to_time.find(p.second) != addr_to_time.end())
-                {
-                    lru_size--;
-                    lru.erase({addr_to_time[p.second], p.second});
-                }
-            }
             if (p.first == 'l')
             {
                 total_loads++;
@@ -103,42 +107,46 @@ public:
                 else
                     write_back(p.second);
             }
-            printSet((p.second >> 2) % numsets);
+            // printSet((p.second >> lognumbytes) % numsets);
         }
     }
 
     void read(ll address)
     {
-        int index = (address >> 2) % numsets;
-        ll tag = address >> (2 + (int)log2(numsets));
+        int index = (address >> lognumbytes) % numsets;
+        ll tag = address >> (lognumbytes + (int)log2(numsets));
         for (int i = 0; i < numblocks; i++)
         {
             if (data[index][i].tag == tag && data[index][i].valid)
             {
                 load_hits++;
                 total_cycles += hit_time;
+                // writeAns("load hit");
                 return;
             }
         }
         load_misses++;
+        // writeAns("load miss");
         total_cycles += hit_time + miss_penalty;
         replace(address);
     }
 
     void write_through(ll address)
     {
-        int index = (address >> 2) % numsets;
-        ll tag = address >> (2 + (int)log2(numsets));
+        int index = (address >> lognumbytes) % numsets;
+        ll tag = address >> (lognumbytes + (int)log2(numsets));
         for (int i = 0; i < numblocks; i++)
         {
             if (data[index][i].tag == tag && data[index][i].valid)
             {
                 store_hits++;
+                // writeAns("store hit");
                 total_cycles += hit_time + miss_penalty;
                 return;
             }
         }
         store_misses++;
+        // writeAns("store miss");
         total_cycles += hit_time + miss_penalty;
         if (allocate == "yes")
         {
@@ -149,45 +157,61 @@ public:
 
     void write_back(ll address)
     {
-        int index = (address >> 2) % numsets;
-        ll tag = address >> (2 + (int)log2(numsets));
+        int index = (address >> lognumbytes) % numsets;
+        ll tag = address >> (lognumbytes + (int)log2(numsets));
         for (int i = 0; i < numblocks; i++)
         {
             if (data[index][i].tag == tag && data[index][i].valid)
             {
                 store_hits++;
+                // writeAns("store hit");
                 total_cycles += hit_time;
                 data[index][i].dirty = true;
                 return;
             }
         }
         store_misses++;
+        // writeAns("store miss");
         total_cycles += hit_time + miss_penalty;
-        replace(address);
-        for (int i = 0; i < numblocks; i++)
+        if (allocate == "yes")
         {
-            if (data[index][i].tag == tag && data[index][i].valid)
+            total_cycles += miss_penalty;
+            replace(address);
+            for (int i = 0; i < numblocks; i++)
             {
-                data[index][i].dirty = true;
-                return;
+                if (data[index][i].tag == tag && data[index][i].valid)
+                {
+                    data[index][i].dirty = true;
+                    return;
+                }
             }
         }
     }
 
     void replace(ll address)
     {
-        int index = (address >> 2) % numsets;
-        ll tag = address >> (2 + (int)log2(numsets));
+        int index = (address >> lognumbytes) % numsets;
+        ll tag = address >> (lognumbytes + (int)log2(numsets));
         Block b = Block(numwords);
         b.create(address, tag, numwords);
         if (replacement == "lru")
         {
-            if (lru_size >= numblocks)
+            // cout << lru[index].size() << endl;
+            if (address_present[index][address] == 1)
             {
-                ll replace_addr = (*(lru.begin())).second;
-                addr_to_time[address] = total_cycles;
-                lru.insert({addr_to_time[address], address});
-                lru_size++;
+                address_present[index][address] = 0;
+                auto itr = lru[index].find({addr_to_time[index][address], address});
+                lru[index].erase(itr);
+            }
+            if (lru[index].size() >= numblocks)
+            {
+                // cout << "here" << endl;
+                pair<int, ll> to_be_removed = (*(lru[index].begin()));
+                ll replace_addr = to_be_removed.second;
+
+                lru[index].erase(lru[index].begin());
+                address_present[index][replace_addr] = 0;
+
                 for (int i = 0; i < numblocks; i++)
                 {
                     if (data[index][i].tag == tag && data[index][i].valid)
@@ -201,9 +225,38 @@ public:
                     }
                 }
             }
+            addr_to_time[index][address] = total_cycles;
+            address_present[index][address] = 1;
+            lru[index].insert({addr_to_time[index][address], address});
+
             data[index][replace_index[index]] = b;
-            if (lru_size < numblocks)
+            if (lru[index].size() < numblocks)
                 replace_index[index]++;
+
+
+
+
+            // if(nodes[index].find(address) != nodes[index].end())
+            //     lru_dll[index].erase(nodes[index][address]);
+            // // cout << lru_dll[index].size() << endl;
+            // if(lru_dll[index].size() >= numblocks)
+            // {
+            //     replace_index[index] = lru_dll[index].front().second;
+            //     lru_dll[index].pop_front();
+            //     nodes[index].erase(lru_dll[index].front().second);
+
+            //     bool dirt = data[index][replace_index[index]].dirty;
+            //     total_cycles += (dirt == true ? miss_penalty : 0);
+            //     if (dirt)
+            //         data[index][replace_index[index]].dirty = false;
+            // }
+            // lru_dll[index].push_back(make_pair(replace_index[index], address));
+            // nodes[index][address] = --lru_dll[index].end();
+            // data[index][replace_index[index]] = b;
+
+            // if (lru_dll[index].size() < numblocks)
+            //     replace_index[index]++;
+            // cout << replace_index[index] << endl;
         }
         else
         {
@@ -226,6 +279,14 @@ public:
                 replace_index[index]++;
             // cout << "here " << index << ' ' << replace_index[index] << endl;
         }
+    }
+
+    void writeAns(string text)
+    {
+        ofstream f;
+        f.open("myans.txt", std::ios::app);
+        f << text << endl;
+        f.close();
     }
 
     void printStats()
@@ -256,7 +317,7 @@ public:
 
     void printSet(int index)
     {
-        cout << "Set " << index << ": " << endl;
+        cout << "Set " << index << ": " << total_loads + total_stores << endl;
         for (int j = 0; j < numblocks; j++)
         {
             cout << "Block " << j << ": ";
