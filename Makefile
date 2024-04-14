@@ -1,12 +1,11 @@
 .DEFAULT_GOAL := run
 
-CC=g++
+CC=gcc
 CFLAGS= -Wall -Wextra --pedantic
 
 clean:
-	@rm -f *.o
-	@rm -f *.out
+	@rm -f cacheSim
 
-run:
+run: cache.cpp
 	@echo "Compiling..."
-	@ $(CC) $(CFLAGS) -o cacheSim cache.cpp
+	@ $(CC) -o cacheSim cache.cpp $(CFLAGS) -lstdc++

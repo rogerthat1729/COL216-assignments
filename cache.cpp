@@ -2,6 +2,17 @@
 using namespace std;
 typedef long long ll;
 
+int log2(int n)
+{
+    int ans = 0;
+    while (n > 1)
+    {
+        n /= 2;
+        ans++;
+    }
+    return ans;
+}
+
 struct Block
 {
     vector<ll> words;
