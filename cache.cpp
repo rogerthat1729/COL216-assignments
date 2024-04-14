@@ -111,7 +111,7 @@ public:
         {
             Block old = data[idx].front();
             data[idx].erase(data[idx].begin());
-            exists[idx][old.tag]=0;
+            exists[idx][old.tag] = 0;
             if (old.dirty && (write == "write-back"))
                 total_cycles += block_miss_penalty;
         }
@@ -155,7 +155,7 @@ public:
                 total_cycles += hit_time + miss_penalty + block_miss_penalty;
                 replace(address);
             }
-            else    
+            else
                 total_cycles += miss_penalty;
         }
     }
@@ -282,12 +282,12 @@ public:
         ll tag = address >> (bytewidth + setwidth);
         Block block(numwords);
         block.create(address, tag, numwords);
-        if((int)data[idx].size() >= numblocks)
+        if ((int)data[idx].size() >= numblocks)
         {
             Block old = data[idx].front();
             data[idx].pop_front();
             nodes[idx].erase(old.tag);
-            if(old.dirty && (write == "write-back"))
+            if (old.dirty && (write == "write-back"))
                 total_cycles += block_miss_penalty;
         }
         data[idx].push_back(block);
@@ -314,7 +314,6 @@ public:
             total_cycles += hit_time + block_miss_penalty;
             replace(address);
         }
-    
     }
 
     void write_through(ll address)
@@ -322,7 +321,7 @@ public:
         int idx = (address >> bytewidth) % numsets;
         ll tag = address >> (bytewidth + setwidth);
 
-        if(nodes[idx].find(tag) != nodes[idx].end())
+        if (nodes[idx].find(tag) != nodes[idx].end())
         {
             store_hits++;
             total_cycles += hit_time + miss_penalty;
@@ -334,7 +333,7 @@ public:
         else
         {
             store_misses++;
-            if(allocate == "write-allocate")
+            if (allocate == "write-allocate")
             {
                 total_cycles += hit_time + miss_penalty + block_miss_penalty;
                 replace(address);
@@ -351,20 +350,20 @@ public:
         int idx = (address >> bytewidth) % numsets;
         ll tag = address >> (bytewidth + setwidth);
 
-        if(nodes[idx].find(tag) != nodes[idx].end())
+        if (nodes[idx].find(tag) != nodes[idx].end())
         {
             store_hits++;
             total_cycles += hit_time;
-            
+
             data[idx].push_back(*nodes[idx][tag]);
             data[idx].erase(nodes[idx][tag]);
             nodes[idx][tag] = --data[idx].end();
-            nodes[idx][tag] -> dirty = true;
+            nodes[idx][tag]->dirty = true;
         }
         else
         {
             store_misses++;
-            if(allocate == "write-allocate")
+            if (allocate == "write-allocate")
             {
                 total_cycles += hit_time + block_miss_penalty;
                 replace(address);
@@ -373,7 +372,6 @@ public:
             else
                 total_cycles += miss_penalty;
         }
-    
     }
 
     void printStats()
@@ -385,7 +383,6 @@ public:
         cout << "Store hits: " << store_hits << endl;
         cout << "Store misses: " << store_misses << endl;
         cout << "Total cycles: " << total_cycles << endl;
-
     }
 
     void printSet(int index)
@@ -396,7 +393,7 @@ public:
             cout << "Block " << j << ": ";
             for (Block el : data[index])
             {
-                for(int i = 0 ; i < numwords ; ++i)
+                for (int i = 0; i < numwords; ++i)
                 {
                     cout << el.words[i] << " ";
                 }
@@ -405,20 +402,38 @@ public:
             cout << endl;
         }
     }
-
 };
 
 int main(int argc, char *argv[])
 {
-    int numargs = argc;
-    numargs++;
+    if (argc < 7)
+    {
+        cerr << "Not enough arguments\n";
+        exit(EXIT_FAILURE);
+    }
 
-    int numsets = stoi(argv[1]);
-    int numblocks = stoi(argv[2]);
-    int numbytes = stoi(argv[3]);
-    string allocate = argv[4];
-    string write = argv[5];
-    string replacement = argv[6];
+    int numsets, numblocks, numbytes;
+    string allocate, write, replacement;
+
+    try
+    {
+        numsets = stoi(argv[1]);
+        numblocks = stoi(argv[2]);
+        numbytes = stoi(argv[3]);
+        allocate = string(argv[4]);
+        write = string(argv[5]);
+        replacement = string(argv[6]);
+    }
+    catch (const invalid_argument &e)
+    {
+        cerr << "Invalid argument: " << e.what() << endl;
+        exit(EXIT_FAILURE);
+    }
+    catch (const out_of_range &e)
+    {
+        cerr << "Argument out of range: " << e.what() << endl;
+        exit(EXIT_FAILURE);
+    }
 
     vector<pair<char, ll>> instructions;
     char ch;
@@ -426,9 +441,8 @@ int main(int argc, char *argv[])
     int extra;
     while (cin >> ch >> hex >> address >> extra)
         instructions.push_back(make_pair(ch, address));
-    if(replacement == "lru")
+    if (replacement == "lru")
     {
-        // cout << "IN LRU\n";
         LRUCache c = LRUCache(numsets, numblocks, (numbytes / 4), allocate, write);
         c.operate(instructions);
         c.printStats();

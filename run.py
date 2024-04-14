@@ -2,14 +2,6 @@ import subprocess
 
 # List of commands to run. You can add more commands here.
 commands = [
-    # "./cacheSim 8 16 32 no-write-allocate write-back lru < testgen.txt",
-    # "./cacheSim 8 16 32 no-write-allocate write-back fifo < testgen.txt ",
-    # "./cacheSim 8 16 32 no-write-allocate write-through lru < testgen.txt",
-    # "./cacheSim 8 16 32 no-write-allocate write-through fifo < testgen.txt",
-    # "./cacheSim 16 4 8 write-allocate write-back lru < testgen.txt",
-    # "./cacheSim 16 4 8 write-allocate write-back fifo < testgen.txt",
-    # "./cacheSim 16 4 8 write-allocate write-through lru < testgen.txt",
-    # "./cacheSim 16 4 8 write-allocate write-through fifo < testgen.txt"
     "./cacheSim 256 4 16 write-allocate write-back lru < gcc.trace",
     "./cacheSim 256 4 16 write-allocate write-back fifo < gcc.trace",
     "./cacheSim 256 4 16 write-allocate write-through lru < gcc.trace",
