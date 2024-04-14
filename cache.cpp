@@ -100,8 +100,8 @@ public:
         {
             Block old = data[idx].front();
             data[idx].erase(data[idx].begin());
-            exists[idx].erase(old.tag);
-            if (old.dirty)
+            exists[idx][old.tag]=0;
+            if (old.dirty && (write == "write-back"))
                 total_cycles += block_miss_penalty;
         }
         data[idx].push_back(block);
@@ -113,7 +113,7 @@ public:
         int idx = (address >> bytewidth) % numsets;
         ll tag = address >> (bytewidth + setwidth);
 
-        if (exists[idx].find(tag) != exists[idx].end())
+        if (exists[idx][tag])
         {
             load_hits++;
             total_cycles += hit_time;
@@ -131,22 +131,21 @@ public:
         int idx = (address >> bytewidth) % numsets;
         ll tag = address >> (bytewidth + setwidth);
 
-        if (exists[idx].find(tag) != exists[idx].end())
+        if (exists[idx][tag])
         {
             store_hits++;
-            // total_cycles += hit_time + miss_penalty;
-            total_cycles += hit_time + block_miss_penalty;
+            total_cycles += hit_time + miss_penalty;
         }
         else
         {
             store_misses++;
-            // total_cycles += hit_time + miss_penalty;
-            total_cycles += hit_time + block_miss_penalty;
             if (allocate == "write-allocate")
             {
-                total_cycles += block_miss_penalty;
+                total_cycles += hit_time + miss_penalty + block_miss_penalty;
                 replace(address);
             }
+            else    
+                total_cycles += miss_penalty;
         }
     }
 
@@ -155,7 +154,7 @@ public:
         int idx = (address >> bytewidth) % numsets;
         ll tag = address >> (bytewidth + setwidth);
 
-        if (exists[idx].find(tag) != exists[idx].end())
+        if (exists[idx][tag])
         {
             store_hits++;
             total_cycles += hit_time;
@@ -171,10 +170,9 @@ public:
         else
         {
             store_misses++;
-            total_cycles += hit_time;
             if (allocate == "write-allocate")
             {
-                total_cycles += block_miss_penalty;
+                total_cycles += hit_time + block_miss_penalty;
                 replace(address);
                 for (int i = 0; i < (int)data[idx].size(); ++i)
                 {
@@ -278,7 +276,7 @@ public:
             Block old = data[idx].front();
             data[idx].pop_front();
             nodes[idx].erase(old.tag);
-            if(old.dirty)
+            if(old.dirty && (write == "write-back"))
                 total_cycles += block_miss_penalty;
         }
         data[idx].push_back(block);
@@ -318,9 +316,8 @@ public:
             store_hits++;
             total_cycles += hit_time + miss_penalty;
             // total_cycles += hit_time + block_miss_penalty;
-
-            data[idx].push_back(*nodes[idx][tag]);
             data[idx].erase(nodes[idx][tag]);
+            data[idx].push_back(*(nodes[idx][tag]));
             nodes[idx][tag] = --data[idx].end();
         }
         else
@@ -328,10 +325,12 @@ public:
             store_misses++;
             if(allocate == "write-allocate")
             {
-                total_cycles += block_miss_penalty;
+                total_cycles += hit_time + miss_penalty + block_miss_penalty;
                 replace(address);
+                // cout << "WA WT\n";
             }
-            total_cycles += hit_time + miss_penalty;
+            else
+                total_cycles += miss_penalty;
             // total_cycles += hit_time + block_miss_penalty
         }
     }
@@ -354,10 +353,9 @@ public:
         else
         {
             store_misses++;
-            total_cycles += hit_time;
             if(allocate == "write-allocate")
             {
-                total_cycles += block_miss_penalty;
+                total_cycles += hit_time + block_miss_penalty;
                 replace(address);
                 nodes[idx][tag]->dirty = true;
             }
@@ -419,13 +417,14 @@ int main(int argc, char *argv[])
         instructions.push_back(make_pair(ch, address));
     if(replacement == "lru")
     {
-        LRUCache c = LRUCache(numsets, numblocks, numbytes / 4, allocate, write);
+        // cout << "IN LRU\n";
+        LRUCache c = LRUCache(numsets, numblocks, (numbytes / 4), allocate, write);
         c.operate(instructions);
         c.printStats();
     }
     else
     {
-        FIFOCache c = FIFOCache(numsets, numblocks, numbytes / 4, allocate, write);
+        FIFOCache c = FIFOCache(numsets, numblocks, (numbytes / 4), allocate, write);
         c.operate(instructions);
         c.printStats();
     }

@@ -1,6 +1,7 @@
 .DEFAULT_GOAL := run
 
-CC=/opt/g++-9.5.0/bin/g++
+CC=g++
+CFLAGS= -Wall -Wextra --pedantic
 
 clean:
 	@rm -f *.o
@@ -8,4 +9,4 @@ clean:
 
 run:
 	@echo "Compiling..."
-	@ g++ -Wall -Wextra --pedantic -o cacheSim cache.cpp
+	@ $(CC) $(CFLAGS) -o cacheSim cache.cpp
