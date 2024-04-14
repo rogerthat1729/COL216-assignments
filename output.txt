@@ -1,0 +1,72 @@
+./cacheSim 8 16 32 no-write-allocate write-back lru < testgen.txt
+Total loads: 49967
+Total stores: 50033
+Load hits: 1455
+Load misses: 48512
+Store hits: 1508
+Store misses: 48525
+Total cycles: 44671700
+
+./cacheSim 8 16 32 no-write-allocate write-back fifo < testgen.txt 
+Total loads: 49967
+Total stores: 50033
+Load hits: 1455
+Load misses: 48512
+Store hits: 1511
+Store misses: 48522
+Total cycles: 44713000
+
+./cacheSim 8 16 32 no-write-allocate write-through lru < testgen.txt
+Total loads: 49967
+Total stores: 50033
+Load hits: 1455
+Load misses: 48512
+Store hits: 1508
+Store misses: 48525
+Total cycles: 43912900
+
+./cacheSim 8 16 32 no-write-allocate write-through fifo < testgen.txt
+Total loads: 49967
+Total stores: 50033
+Load hits: 1455
+Load misses: 48512
+Store hits: 1511
+Store misses: 48522
+Total cycles: 78936000
+
+./cacheSim 16 4 8 write-allocate write-back lru < testgen.txt
+Total loads: 49967
+Total stores: 50033
+Load hits: 765
+Load misses: 49202
+Store hits: 847
+Store misses: 49186
+Total cycles: 29678400
+
+./cacheSim 16 4 8 write-allocate write-back fifo < testgen.txt
+Total loads: 49967
+Total stores: 50033
+Load hits: 762
+Load misses: 49205
+Store hits: 850
+Store misses: 49183
+Total cycles: 29679200
+
+./cacheSim 16 4 8 write-allocate write-through lru < testgen.txt
+Total loads: 49967
+Total stores: 50033
+Load hits: 765
+Load misses: 49202
+Store hits: 847
+Store misses: 49186
+Total cycles: 24780900
+
+./cacheSim 16 4 8 write-allocate write-through fifo < testgen.txt
+Total loads: 49967
+Total stores: 50033
+Load hits: 762
+Load misses: 49205
+Store hits: 850
+Store misses: 49183
+Total cycles: 29784200
+

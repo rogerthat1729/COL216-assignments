@@ -96,7 +96,7 @@ public:
         ll tag = address >> (bytewidth + setwidth);
         Block block(numwords);
         block.create(address, tag, numwords);
-        if (data[idx].size() >= numblocks)
+        if ((int)data[idx].size() >= numblocks)
         {
             Block old = data[idx].front();
             data[idx].erase(data[idx].begin());
@@ -159,7 +159,7 @@ public:
         {
             store_hits++;
             total_cycles += hit_time;
-            for (int i = 0; i < data[idx].size(); ++i)
+            for (int i = 0; i < (int)data[idx].size(); ++i)
             {
                 if (data[idx][i].tag == tag)
                 {
@@ -176,7 +176,7 @@ public:
             {
                 total_cycles += block_miss_penalty;
                 replace(address);
-                for (int i = 0; i < data[idx].size(); ++i)
+                for (int i = 0; i < (int)data[idx].size(); ++i)
                 {
                     if (data[idx][i].tag == tag)
                     {
@@ -273,7 +273,7 @@ public:
         ll tag = address >> (bytewidth + setwidth);
         Block block(numwords);
         block.create(address, tag, numwords);
-        if(data[idx].size() >= numblocks)
+        if((int)data[idx].size() >= numblocks)
         {
             Block old = data[idx].front();
             data[idx].pop_front();
@@ -316,8 +316,8 @@ public:
         if(nodes[idx].find(tag) != nodes[idx].end())
         {
             store_hits++;
-            // total_cycles += hit_time + miss_penalty;
-            total_cycles += hit_time + block_miss_penalty;
+            total_cycles += hit_time + miss_penalty;
+            // total_cycles += hit_time + block_miss_penalty;
 
             data[idx].push_back(*nodes[idx][tag]);
             data[idx].erase(nodes[idx][tag]);
@@ -326,13 +326,13 @@ public:
         else
         {
             store_misses++;
-            // total_cycles += hit_time + miss_penalty;
-            total_cycles += hit_time + block_miss_penalty;
             if(allocate == "write-allocate")
             {
                 total_cycles += block_miss_penalty;
                 replace(address);
             }
+            total_cycles += hit_time + miss_penalty;
+            // total_cycles += hit_time + block_miss_penalty
         }
     }
 
@@ -399,50 +399,28 @@ public:
 
 };
 
-vector<pair<char, ll>> read_file(string filename)
-{
-    ifstream file;
-    file.open(filename);
-    vector<pair<char, ll>> instructions;
-    char type;
-    ll address;
-    int ignore;
-    stringstream ss;
-    string line;
-    while (getline(file, line))
-    {
-        ss << line;
-        ss >> type >> hex >> address >> ignore;
-        instructions.push_back({type, address});
-        ss.clear();
-    }
-    return instructions;
-}
-
 int main(int argc, char *argv[])
 {
-    // cout << "hello" << endl;
+    int numargs = argc;
+    numargs++;
+
     int numsets = stoi(argv[1]);
     int numblocks = stoi(argv[2]);
     int numbytes = stoi(argv[3]);
     string allocate = argv[4];
     string write = argv[5];
     string replacement = argv[6];
-    string filename = argv[7];
 
-    // cout << numsets << endl;
-    // cout << numblocks << endl;
-    // cout << numbytes << endl;
-    // cout << filename << endl;
-
-    vector<pair<char, ll>> instructions = read_file(filename);
+    vector<pair<char, ll>> instructions;
+    char ch;
+    ll address;
+    int extra;
+    while (cin >> ch >> hex >> address >> extra)
+        instructions.push_back(make_pair(ch, address));
     if(replacement == "lru")
     {
-        // cout << "here\n";
         LRUCache c = LRUCache(numsets, numblocks, numbytes / 4, allocate, write);
-        // cout << "here\n";
         c.operate(instructions);
-        // cout << "here\n";
         c.printStats();
     }
     else

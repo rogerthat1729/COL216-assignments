@@ -8,5 +8,4 @@ clean:
 
 run:
 	@echo "Compiling..."
-	@g++ -w -o cacheSim cache.cpp
-	@# @g++ -Wall -Wextra --pedantic -o cacheSim cache.cpp
+	@ g++ -Wall -Wextra --pedantic -o cacheSim cache.cpp
