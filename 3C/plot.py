@@ -1,22 +1,35 @@
 import pandas as pd
 import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 
 df = pd.read_csv('output.csv')
-df = df[df['Size'] % 256 != 0]
-df1 = df[['Size', 'MultiplyTime1']]
-df2 = df[['Size', 'MultiplyTime2']]
-df3 = df[['Size', 'MultiplyTime3']]
-df4 = df[['Size', 'MultiplyTime4']]
-df5 = df[['Size', 'MultiplyTime5']]
-df6 = df[['Size', 'MultiplyTime6']]
+df['Size']*=32
 
-fig = go.Figure()
+#plot this df using plt
+# plt.figure(figsize=(10, 6))
+# plt.plot(df['Size'], df['ijk'], marker='o', color='blue', label='ijk')
+# plt.plot(df['Size'], df['ikj'], marker='o', color='green', label='ikj')
+# plt.plot(df['Size'], df['jik'], marker='o', color='red', label='jik')
+# plt.plot(df['Size'], df['jki'], marker='o', color='orange', label='jki')
+# plt.plot(df['Size'], df['kij'], marker='o', color='magenta', label='kij')
+# plt.plot(df['Size'], df['kji'], marker='o', color='yellow', label='kji')
 
-fig.add_trace(go.Scatter(x=df1['Size'], y=df1['MultiplyTime1'], mode='lines', name='ijk'))
-fig.add_trace(go.Scatter(x=df2['Size'], y=df2['MultiplyTime2'], mode='lines', name='ikj'))
-fig.add_trace(go.Scatter(x=df3['Size'], y=df3['MultiplyTime3'], mode='lines', name='kji'))
-fig.add_trace(go.Scatter(x=df4['Size'], y=df4['MultiplyTime4'], mode='lines', name='kij'))
-fig.add_trace(go.Scatter(x=df5['Size'], y=df5['MultiplyTime5'], mode='lines', name='jki'))
-fig.add_trace(go.Scatter(x=df6['Size'], y=df6['MultiplyTime6'], mode='lines', name='jik'))
+# plt.xlabel('Size of Matrix')
+# plt.ylabel('Time for Multiplication (microseconds)')
+# plt.title('Execution Time for Matrix Multiplication vs. Matrix Size for Different Loop Orders')
+# plt.legend()
+# plt.grid(True, which="both", ls="--")
+# plt.show()
 
-fig.show()
+plt.figure(figsize=(10, 6))
+plt.plot(df['Size'], df['in_ij'], marker='o', color='blue', label='inPlace_ij')
+plt.plot(df['Size'], df['in_ji'], marker='o', color='green', label='inPlace_ji')
+plt.plot(df['Size'], df['out_ij'], marker='o', color='red', label='outPlace_ij')
+plt.plot(df['Size'], df['out_ji'], marker='o', color='yellow', label='outPlace_ji')
+
+plt.xlabel('Size of Matrix')
+plt.ylabel('Time for Transpose (microseconds)')
+plt.title('Execution Time for Matrix Transpose vs. Matrix Size')
+plt.legend()
+plt.grid(True, which="both", ls="--")
+plt.show()
